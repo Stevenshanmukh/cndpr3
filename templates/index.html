@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Gallery with AI Captions</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap">
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #2ade75;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #000; /* Changed to black */
+            color: white; /* Text remains white */
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 900px; /* Adjusted container size */
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .upload-form {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .upload-form h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .upload-form input[type="file"] {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .upload-form button {
+            padding: 10px 20px;
+            background-color: #000; /* Changed to black */
+            color: white; /* Text remains white */
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .upload-form button:hover {
+            background-color: #333; /* Slightly lighter black on hover */
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .image-item {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .image-item:hover {
+            transform: scale(1.03);
+        }
+
+        .image-item img {
+            width: 100%; /* Ensures the image spans the full width of its container */
+            height: 200px; /* Fixed height for consistency */
+            object-fit: cover; /* Ensures the image covers the area without distortion */
+            display: block; /* Removes any extra space below the image */
+        }
+
+        .caption, .description {
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+
+        .caption strong, .description strong {
+            font-weight: 600;
+        }
+
+        .no-images {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Image Gallery with AI Captions</h1>
+    </div>
+
+    <div class="container">
+        <div class="upload-form">
+            <h2>Upload New Image</h2>
+            <form action="/upload" method="post" enctype="multipart/form-data">
+                <input type="file" name="image" accept="image/*" required>
+                <br>
+                <button type="submit">Upload Image</button>
+            </form>
+        </div>
+
+        <h2>Uploaded Images</h2>
+        <div id="image-gallery">
+            {% if images %}
+                {% for image_url in images %}
+                    <div class="image-item">
+                        <!-- Use the new route to serve images -->
+                        <img src="{{ url_for('get_image', filename=image_url.split('/')[-1]) }}" alt="Uploaded Image">
+                        <p class="caption"><strong>Caption:</strong>
+                            {% set image_name_base = image_url.split('/')[-1].split('.')[0] %}
+                            {% set json_blob_name = image_name_base + '.json' %}
+                            {% set json_blob = namespace.bucket.get_blob(json_blob_name) %}
+                            {% if json_blob %}
+                                {% set metadata = json_blob.download_as_text() | from_json %}
+                                {{ metadata.caption }}
+                            {% else %}
+                                No caption available.
+                            {% endif %}
+                        </p>
+                        <p class="description"><strong>Description:</strong>
+                            {% if json_blob %}
+                                {{ metadata.description }}
+                            {% else %}
+                                No description available.
+                            {% endif %}
+                        </p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="no-images">No images uploaded yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</body>
+</html>
